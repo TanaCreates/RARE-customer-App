@@ -18,12 +18,7 @@ const Security = () => {
         <Text style={styles.description}>Your account will permanently be deleted from our system</Text>
         <Image source={require('../assets/next.png')} style={{ width: 30, height: 30,  marginLeft:330, }} />
         </TouchableOpacity>
-      
- <TouchableOpacity style={styles.option} onPress={showAlert}>
-        <Text style={styles.title}>Multi-factor enrollment</Text>
-        <Text style={styles.description}>Add additional security to your account with 2-step verification</Text>
-        <Image source={require('../assets/next.png')} style={{ width: 30, height: 30, marginLeft: 330 }} />
-      </TouchableOpacity>
+  
 
  <TouchableOpacity style={styles.option} onPress={() => navigation.navigate('UpdatePassword')}>
         <Text style={styles.title}>Update Password</Text>
