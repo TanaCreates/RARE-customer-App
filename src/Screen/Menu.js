@@ -1,50 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
-import { getDatabase, ref, onValue, push, update, child, get } from 'firebase/database';
-import { db, auth } from './firebase'; // Ensure Firebase and Auth are configured
-import Header from './Header';
+import { ref, onValue, push, update, get } from 'firebase/database';
+import { getAuth } from 'firebase/auth';
+import { db } from './firebase';
+import { useCart } from '../Screen/CartContext';
 
 const MenuScreen = ({ navigation }) => {
   const [menuItems, setMenuItems] = useState([]);
   const [filteredItems, setFilteredItems] = useState([]);
   const [searchText, setSearchText] = useState('');
   const [cartCount, setCartCount] = useState(0);
-  const [userInfo, setUserInfo] = useState(null); // State to store user information
-  const [formattedEmail, setFormattedEmail] = useState(''); // State to store the formatted email
   const [loading, setLoading] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState('All'); // State to store selected category, default is 'All'
-
-  // Fetch the current user info and store email and userId
-  useEffect(() => {
-    const fetchUserInfo = async () => {
-      try {
-        const currentUser = auth.currentUser;
-        if (currentUser) {
-          const email = currentUser.email;
-          const formattedEmail = email.replace(/\./g, '_'); // Replace dots with underscores
-
-          const dbRef = ref(db);
-          const snapshot = await get(child(dbRef, `users/${formattedEmail}`)); // Query by formatted email
-
-          if (snapshot.exists()) {
-            const userData = snapshot.val();
-            setUserInfo(userData);
-            setFormattedEmail(formattedEmail); // Set the formatted email
-          } else {
-            console.log("No user data found at path users/" + formattedEmail);
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching user info: ", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUserInfo();
-  }, []);
-
-  // Fetch menu items from the database
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [userEmail, setUserEmail] = useState('');
+  const {addItemToCart} = useCart();
   useEffect(() => {
     const menuRef = ref(db, 'Menu/');
     const unsubscribe = onValue(menuRef, (snapshot) => {
@@ -56,39 +25,50 @@ const MenuScreen = ({ navigation }) => {
         }
       }
       setMenuItems(formattedData);
-      setFilteredItems(formattedData); // Set all items initially
+      setFilteredItems(formattedData);
+      setLoading(false);
     });
 
-    return () => unsubscribe(); // Clean up the listener
+    return () => unsubscribe();
   }, []);
 
-  // Fetch cart items count
   useEffect(() => {
-    if (formattedEmail) {
-      const cartRef = ref(db, `Carts/${formattedEmail}`);
-      const unsubscribe = onValue(cartRef, (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-          const cartItems = Object.keys(data).length;
-          setCartCount(cartItems);
-        } else {
-          setCartCount(0);
+    const fetchUserInfo = async () => {
+      try {
+        const currentUser = getAuth().currentUser;
+        if (currentUser) {
+          const email = currentUser.email.replace(/\./g, '_'); // Format email for DB key
+          setUserEmail(email);
+          const snapshot = await get(ref(db, `users/${email}`));
+          if (snapshot.exists()) {
+            // Handle user data (no need to use setUserInfo)
+            const userData = snapshot.val();
+            console.log('User Info:', userData); // You can use this data as needed
+          }
         }
-      });
+      } catch (error) {
+        console.error('Error fetching user info: ', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchUserInfo();
+  }, []);
 
-      return () => unsubscribe(); // Clean up the listener
-    }
-  }, [formattedEmail]);
+  useEffect(() => {
+    const cartRef = ref(db, `Carts/${userEmail}`);
+    const unsubscribe = onValue(cartRef, (snapshot) => {
+      const data = snapshot.val();
+      setCartCount(data ? Object.keys(data).length : 0);
+    });
 
-  // Handle Add to Cart functionality
+    return () => unsubscribe();
+  }, [userEmail]);
+
   const handleAddToCart = (item) => {
-    if (!formattedEmail) {
-      console.error("No user email found, cannot add to cart");
-      return;
-    }
-
-    const cartRef = ref(db, `Carts/${formattedEmail}`);
-    const existingItemRef = ref(db, `Carts/${formattedEmail}/${item.key}`);
+    const cartRef = ref(db, `Carts/${userEmail}`);
+    const existingItemRef = ref(db, `Carts/${userEmail}/${item.key}`);
 
     onValue(existingItemRef, (snapshot) => {
       const data = snapshot.val();
@@ -116,30 +96,18 @@ const MenuScreen = ({ navigation }) => {
     }, {
       onlyOnce: true,
     });
+    addItemToCart(); // Increment cart count when item is added
   };
 
-  // Handle search functionality
   const handleSearch = (text) => {
     setSearchText(text);
-    if (text) {
-      const filtered = menuItems.filter((item) =>
-        item.item && item.item.toLowerCase().includes(text.toLowerCase())
-      );
-      setFilteredItems(filtered);
-    } else {
-      handleCategorySelect(selectedCategory); // Reapply the current category filter
-    }
+    setFilteredItems(text ? menuItems.filter((item) =>
+      item.item && item.item.toLowerCase().includes(text.toLowerCase())) : menuItems);
   };
 
-  // Handle category selection
   const handleCategorySelect = (category) => {
     setSelectedCategory(category);
-    if (category === 'All') {
-      setFilteredItems(menuItems); // Show all items if 'All' is selected
-    } else {
-      const filtered = menuItems.filter(item => item.category === category);
-      setFilteredItems(filtered);
-    }
+    setFilteredItems(category === 'All' ? menuItems : menuItems.filter(item => item.category === category));
   };
 
   if (loading) {
@@ -152,23 +120,28 @@ const MenuScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Header navigation={navigation} cartCount={cartCount} />
-
-      <TextInput
-        style={styles.searchBar}
-        placeholder="Search menu..."
-        value={searchText}
-        onChangeText={handleSearch}
-      />
+      <View style={styles.searchContainer}>
+        <Image
+          source={require('../assets/search-icon.jpg')} 
+          style={styles.searchIcon}
+        />
+        <TextInput
+          style={styles.searchBar}
+          placeholder="Search menu..."
+          placeholderTextColor="#ffffff"
+          value={searchText}
+          onChangeText={handleSearch}
+        />
+      </View>
 
       <View style={styles.categoriesContainer}>
-        {['All', 'Cold Beverages', 'Food', 'Hot Beverages', 'Snacks', 'Combo Items'].map((category) => (
+        {['All', 'Hot Beverages', 'Cold Beverages', 'Food', 'Snacks'].map((category) => (
           <TouchableOpacity
             key={category}
-            style={[styles.categoryButton, selectedCategory === category && styles.selectedCategoryButton]} // Highlight selected category
+            style={[styles.categoryButton, selectedCategory === category && styles.selectedCategoryButton]}
             onPress={() => handleCategorySelect(category)}
           >
-            <Text style={[styles.categoryText, selectedCategory === category && styles.selectedCategoryText]}> {/* Highlight selected category text */}
+            <Text style={[styles.categoryText, selectedCategory === category && styles.selectedCategoryText]}>
               {category}
             </Text>
           </TouchableOpacity>
@@ -178,22 +151,22 @@ const MenuScreen = ({ navigation }) => {
       <FlatList
         data={filteredItems}
         renderItem={({ item }) => (
-          <TouchableOpacity onPress={() => navigation.navigate('ItemDetails', { item: item.key, category: item.category })}>
-            <View style={styles.itemContainer}>
+          <View style={styles.itemContainer}>
+            <View style={styles.imageContainer}>
               <Image
                 source={item.img ? { uri: item.img } : require('../assets/placeholder.jpeg')}
                 style={styles.itemImage}
               />
-              <Text style={styles.itemName}>{item.item}</Text>
-              <Text style={styles.itemPrice}>R {item.price}</Text>
-              <TouchableOpacity style={styles.addButton} onPress={() => handleAddToCart(item)}>
-                <Image source={require('../assets/cart.png')} style={{ width: 30, height: 30 }} />
-              </TouchableOpacity>
             </View>
-          </TouchableOpacity>
+            <Text style={styles.itemName}>{item.item}</Text>
+            <Text style={styles.itemPrice}>R {item.price}</Text>
+            <TouchableOpacity style={styles.addButton} onPress={() => handleAddToCart(item)}>
+              <Text style={styles.addButtonText}>+</Text>
+            </TouchableOpacity>
+          </View>
         )}
         keyExtractor={(item) => item.key}
-        numColumns={3}
+        numColumns={2}
       />
     </View>
   );
@@ -203,6 +176,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
+    paddingHorizontal: 16,
   },
   loadingContainer: {
     flex: 1,
@@ -213,73 +187,101 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: '#000',
   },
-  searchBar: {
-    height: 40,
-    borderColor: '#000000',
-    borderWidth: 1,
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#223d3c',
     borderRadius: 25,
-    paddingLeft: 15,
-    margin: 15,
-    backgroundColor: '#ffffff',
+    paddingHorizontal: 15,
+    marginVertical: 10,
+  },
+  searchIcon: {
+    width: 20,
+    height: 20,
+    marginRight: 8,
+  },
+  searchBar: {
+    flex: 1,
+    color: '#ffffff',
+    paddingVertical: 8,
   },
   categoriesContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingHorizontal: 10,
-    marginBottom: 20,
+    justifyContent: 'space-between',
+    marginVertical: 10,
   },
   categoryButton: {
-    backgroundColor: '#f7f7f7',
+    backgroundColor: '#f4f4f4',
+    padding: 8,
     borderRadius: 20,
-    paddingVertical: 10,
-    paddingHorizontal: 11,
   },
   selectedCategoryButton: {
     backgroundColor: '#223d3c',
   },
   categoryText: {
-    fontFamily: 'Poppins-Bold',
-    fontSize: 10,
-    color: '#000000',
+    fontSize: 12,
+    color: '#223d3c',
   },
   selectedCategoryText: {
     color: '#ffffff',
+    fontWeight: 'bold',
   },
   itemContainer: {
-    backgroundColor: '#223d3c',
-    margin: 9,
-    padding: 15,
-    borderRadius: 20,
+    backgroundColor: '#f4f4f4',
+    borderRadius: 14,
+    padding: 10,
+    margin: 8,
     alignItems: 'center',
-    width: 120,
+    width: 150,
+    height: 210,
+  },
+  imageContainer: {
+    backgroundColor: '#223d3c',
+    borderRadius: 14,
+    padding: 10,
+    marginBottom: 8,
+    width: 118,
+    height: 130,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   itemImage: {
-    width: 60,
-    height: 60,
-    marginBottom: 10,
-    borderRadius: 10,
-    backgroundColor: '#ffffff',
+    width: 110,
+    height: 110,
   },
   itemName: {
-    fontFamily: 'Poppins-Bold',
-    fontSize: 10,
-    color: '#ffffff',
+    fontSize: 14,
+    color: '#223d3c',
+    textAlign: 'left',
+    alignSelf: 'stretch',
     marginBottom: 3,
-    textAlign: 'center',
+    paddingLeft: 6,
   },
   itemPrice: {
-    fontFamily: 'Poppins-Bold',
-    fontSize: 10,
-    color: '#ffffff',
-    marginBottom: 5,
+    fontSize: 17,
+    color: '#223d3c',
+    textAlign: 'left',
+    alignSelf: 'stretch',
+    marginBottom: 3,
+    paddingLeft: 6,
+    fontWeight: 'bold',
   },
   addButton: {
+    backgroundColor: '#223d3c',
+    borderRadius: 5,
+    height: 30,
+    width: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
     position: 'absolute',
-    bottom: 5,
-    right: 5,
-    backgroundColor: '#ffffff',
-    borderRadius: 15,
-    padding: 5,
+    right: 8,
+    bottom: 8,
+  },
+  addButtonText: {
+    color: '#ffffff',
+    fontSize: 24,
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
 });
 
