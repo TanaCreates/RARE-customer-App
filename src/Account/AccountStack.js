@@ -14,6 +14,7 @@ import ReviewHistory from './ReviewHistory';
 import LogOut from './LogOut';
 import Login from '../Screen/Login';
 import SignUp from '../Screen/SignUp';
+import Notifications from './Notifications';
 const Stack = createStackNavigator();
 
 const AccountStack = () => {
@@ -23,6 +24,8 @@ const AccountStack = () => {
       <Stack.Screen name="AccountInfo" component={AccountInfo} />
       <Stack.Screen name="Security" component={Security} />
       <Stack.Screen name="DeleteAccount" component={DeleteAccount} />
+      <Stack.Screen name="Notifications" component={Notifications} />
+
       <Stack.Screen name="MFA" component={MFA} />
       <Stack.Screen name="UpdatePassword" component={UpdatePassword} />
       <Stack.Screen name="CustomerRequest" component={CustomerRequest} />
