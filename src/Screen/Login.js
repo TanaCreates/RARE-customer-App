@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, TextInput, Button, Text, TouchableOpacity, Alert, StyleSheet } from 'react-native';
+import { View, TextInput, Button, Image, Text, TouchableOpacity, ScrollView, Alert, StyleSheet } from 'react-native';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from './firebase';
 import { useNavigation } from '@react-navigation/native';
@@ -10,7 +10,6 @@ function Login() {
   // State variables
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState(''); // For confirm password
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -74,26 +73,33 @@ function Login() {
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
-
+  const handleGoogleSignIn = () => {
+    navigation.navigate('GoogleSignIn');  // Navigate to GoogleSignIn.js
+  };
   return (
+    <ScrollView style={styles.containerr}>
     <View style={styles.container}>
+      <Image source={require('../assets/HeaderLogo.png')} style={styles.logo} />
+      
       <Text style={styles.title}>Login</Text>
       <Text style={styles.subtitle}>Sign in to continue</Text>
 
+      <Text style={styles.label}>Email</Text>
       <TextInput
+      style={styles.input}
         keyboardType="email-address"
         placeholder="Email"
         value={email}
         onChangeText={setEmail}
-        style={styles.input}
-      />
 
+      />
+ <Text style={styles.label}>Password</Text>
       <TextInput
+      style={styles.input}
         secureTextEntry={!showPassword}
         placeholder="Password"
         value={password}
         onChangeText={setPassword}
-        style={styles.input}
       />
 
       <TouchableOpacity onPress={togglePasswordVisibility}>
@@ -111,26 +117,49 @@ function Login() {
         onPress={handleLogin} 
         disabled={loading || lockout}
       >
-        <Text style={styles.loginButtonText}>{loading ? 'Logging in...' : 'LOGIN'}</Text>
+        <Text style={styles.loginButtonText}>{loading ? 'Logging in...' : 'Login'}</Text>
       </TouchableOpacity>
 
       {error && <Text style={styles.errorText}>{error}</Text>}
-
+    
       <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
         <View style={styles.signupContainer}>
           <Text style={styles.signupText}>Don't have an account? <Text style={styles.signUp}>Sign Up</Text></Text>
         </View>
       </TouchableOpacity>
     </View>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
+  containerr: {
+    flex: 1,
+    padding: 20,
+    backgroundColor: '#fff',
+  },
   container: {
     flex: 1,
     padding: 20,
     justifyContent: 'center',
     backgroundColor: '#fff',
+  },
+  logo: {
+    width: 200, // Adjust the width as needed
+    height: 100, // Adjust the height as needed
+    marginBottom: 20, // Space between the logo and the title
+    resizeMode: 'contain',
+    alignItems: 'center',
+    justifyContent: 'center',
+marginLeft: 70,
+  },
+  label: {
+    fontSize: 16,
+    marginBottom: 5,
+    color: 'black',
+    fontFamily: 'serif',
+    marginTop: 15,
+
   },
   title: {
     fontSize: 32,
@@ -146,15 +175,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
   },
-  input: {
+ input: {
     borderWidth: 1,
     borderColor: '#ccc',
+    paddingVertical: 10,
+    paddingHorizontal: 15,
     borderRadius: 25,
-    padding: 10,
-    marginBottom: 20,
-    paddingLeft: 40,
-    backgroundColor: '#f5f5f5',
-    fontSize: 16,
+    color: 'black',
+    width: '100%',
   },
   showPasswordText: {
     textAlign: 'right',
@@ -171,11 +199,12 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   loginButton: {
-    backgroundColor: '#082c24',
+    backgroundColor: '#223D3C',
     paddingVertical: 15,
     borderRadius: 25,
     marginBottom: 20,
     alignItems: 'center',
+    width: '100%',
   },
   loginButtonText: {
     color: '#fff',
