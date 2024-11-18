@@ -5,6 +5,7 @@ import Menu from './Menu';
 import Cart from './Cart';
 import CheckOut from './CheckOut';
 import ItemDetails from './ItemDetails';
+import Loading from '../components/Loading';
 const Stack = createStackNavigator();
 
 const MenuStack = () => {
@@ -14,6 +15,7 @@ const MenuStack = () => {
       <Stack.Screen name="Cart" component={Cart} />
       <Stack.Screen name="CheckOut" component={CheckOut} />
       <Stack.Screen name="ItemDetails" component={ItemDetails} />
+      <Stack.Screen name="Loading" component={Loading} />
 
 
     </Stack.Navigator>
