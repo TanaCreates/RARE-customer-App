@@ -80,36 +80,36 @@ const DeleteAccount = () => {
             <Text style={styles.subtitle}>Are you sure you want to delete your request?</Text>
 
             <View style={styles.confirmationRow}>
-                <Text>Confirm Deletion:</Text>
+                <Text style={styles.label}>Confirm Deletion:</Text>
                 <View style={styles.radioGroup}>
                     <RadioButton
                         value="no"
                         status={!isConfirmed ? 'checked' : 'unchecked'}
                         onPress={() => setIsConfirmed(false)}
                     />
-                    <Text>No</Text>
+                    <Text style={styles.label}>No</Text>
                     <RadioButton
                         value="yes"
                         status={isConfirmed ? 'checked' : 'unchecked'}
                         onPress={() => setIsConfirmed(true)}
                     />
-                    <Text>Yes</Text>
+                    <Text style={styles.label}>Yes</Text>
                 </View>
             </View>
 
             <View style={styles.requestRow}>
-                <Text>Email:</Text>
+                <Text style={styles.label}>Email:</Text>
                 <TextInput
-                    style={styles.emailInput}
+                    style={styles.input}
                     value={userEmail}
                     editable={false} // Read-only
                 />
             </View>
 
             <View style={styles.requestRow}>
-                <Text>Password:</Text>
+                <Text style={styles.label}>Password:</Text>
                 <TextInput
-                    style={styles.passwordInput}
+                    style={styles.input}
                     value={password}
                     onChangeText={handlePasswordChange}
                     placeholder="Enter your password"
@@ -118,9 +118,9 @@ const DeleteAccount = () => {
             </View>
 
             <View style={styles.requestRow}>
-                <Text>Reason for Deletion:</Text>
+                <Text style={styles.label}>Reason for Deletion:</Text>
                 <TextInput
-                    style={styles.reasonInput}
+                    style={styles.input}
                     value={deletionReason}
                     onChangeText={handleReasonChange}
                     placeholder="Enter reason for deletion"
@@ -140,17 +140,25 @@ const DeleteAccount = () => {
 const styles = StyleSheet.create({
     
     formContainer: {
+        flex: 1,
+        justifyContent: 'center',
         padding: 20,
         backgroundColor: '#fff',
-
     },
     title: {
         fontSize: 24,
         fontWeight: 'bold',
-        marginBottom: 10,
+        marginBottom: 20,
         fontFamily: 'serif',  // Custom font
-
+        color: '#082c24',
+        textAlign: 'center',
     },
+    label: {
+    fontSize: 16,
+    marginBottom: 5,
+    color: 'black',
+    fontFamily: 'serif',
+  },
     subtitle: {
         fontSize: 15,
         marginBottom: 10,
@@ -160,11 +168,23 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         marginBottom: 10,
+        
     },
+    input: {
+        borderWidth: 1,
+        borderColor: '#ccc',
+        paddingVertical: 10,
+        paddingHorizontal: 15,
+        borderRadius: 25,
+        color: 'black',
+        width: '100%',
+      },
     radioGroup: {
         flexDirection: 'row',
         alignItems: 'center',
         marginLeft: 10,
+                color: 'black',
+
     },
     requestRow: {
         marginBottom: 10,
@@ -196,6 +216,7 @@ const styles = StyleSheet.create({
         marginBottom: 10,
     },
     submitButton: {
+        marginTop: 9,
         backgroundColor: '#223d3c',
         padding: 15,
         borderRadius: 25,
